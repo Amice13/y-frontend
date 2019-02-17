@@ -36,7 +36,8 @@
               <v-flex sm1 xs12 pl-2 pr-2>
                 <v-img :src="item.source" :aspect-ratio="1" />
               </v-flex>
-              <v-flex sm4 pb-2 xs12 pl-2 pr-2 text-md-left text-xs-center> {{ item.tooltip }}</v-flex>
+              <v-flex sm4 pb-2 xs12 pl-2 pr-2 text-md-left text-xs-center> {{ item.tooltip }}<br/>
+                <span class="grey--text">[position: {{ item.tooltipPosition }}]</span></v-flex>
               <v-flex sm2 xs4 pl-2 pr-2 text-md-left text-xs-center>{{ item.name }}</v-flex>
               <v-flex sm2 xs4 pl-2 pr-2 text-xs-center>{{ item.width }} × {{ item.height }}</v-flex>
               <v-flex sm1 xs4 pl-2 pr-2 text-xs-center>{{ (item.size / (Math.pow(1024, 2))).toFixed(2) }} MB</v-flex>
@@ -44,7 +45,7 @@
                 <v-btn small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
                   <v-icon :left="$vuetify.breakpoint.smAndDown">play_arrow</v-icon>
                   <span class="hidden-sm-and-up"> View</span></v-btn>
-                <v-btn small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
+                <v-btn @click.native="editImage(item)" small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
                   <v-icon :left="$vuetify.breakpoint.smAndDown">edit</v-icon>
                   <span class="hidden-sm-and-up"> Edit</span></v-btn>
                 <v-btn @click.native="imageToDelete = item._id" small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
@@ -61,10 +62,10 @@
     </v-flex>
 
     <!-- Upload dialog -->
-    <v-dialog v-model="uploadDialog" scrollable :overlay="true" max-width="800px" transition="dialog-transition">
+    <v-dialog v-model="uploadDialog" persistent scrollable :overlay="true" max-width="800px" transition="dialog-transition">
       <v-card>
         <v-card-title class="headline grey lighten-2" primary-title>
-          <h2>Upload image</h2>
+          <h2><span v-if="editMode">Edit</span><span v-else>Upload</span> image</h2>
         </v-card-title>
         <v-card-text>
           <v-layout row wrap>
@@ -79,13 +80,15 @@
               <p><strong>Width and height</strong> {{ image.width }} × {{ image.height }}</p>
               <p><strong>Uploaded at:</strong> {{ image.createdAt.toLocaleString('ru', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }) }}</p>
               <v-text-field name="tooltip" label="Add tooltip" v-model="image.tooltip"></v-text-field>
+              <v-select :items="positions" v-model="image.tooltipPosition" label="Tooltip position"></v-select>
             </v-flex>
           </v-layout>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn @click.native.prevent='uploadDialog = false'><v-icon left>close</v-icon>Discard</v-btn>
-          <v-btn @click.native.prevent="saveImage" color="primary"><v-icon left>save</v-icon>Save</v-btn>
+          <v-btn v-if="editMode" @click.native.prevent="updateImage" color="primary"><v-icon left>update</v-icon>Update</v-btn>
+          <v-btn v-else @click.native.prevent="saveImage" color="primary"><v-icon left>save</v-icon>Save</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -123,7 +126,7 @@
     </v-dialog>
 
     <!-- Delete confirmation dialog -->
-    <v-dialog :value="imageToDelete" scrollable :overlay="true" max-width="500px" transition="dialog-transition">
+    <v-dialog :value="imageToDelete" persistent scrollable :overlay="true" max-width="500px" transition="dialog-transition">
       <v-card>
         <v-card-title class="headline blue lighten-1" dark primary-title>
           <h2 class="white--text">Confirmation</h2>
@@ -134,7 +137,7 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn @click="imageToDelete = ''">Cancel</v-btn>
-          <v-btn @click="remove" color="primary">Ok</v-btn>
+          <v-btn @click="removeImage" color="primary">Ok</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -178,6 +181,36 @@ export default {
         return null
       })
     },
+    editImage (item) {
+      this.editMode = true
+      this.editId = item._id
+      this.image = Object.assign({}, item)
+      this.uploadDialog = true
+    },
+    updateImage () {
+      db.update({ _id: this.editId }, this.image, (error, updated) => {
+        this.editId = ''
+        this.editMode = false
+        this.uploadDialog = false
+        if (error) {
+          this.error = error
+          return null
+        }
+        this.success = 'You successfully updated the image!'
+        this.filterList()
+      })
+    },
+    removeImage () {
+      db.remove({ _id: this.imageToDelete }, (error, removed) => {
+        this.imageToDelete = ''
+        if (error) {
+          this.error = error
+          return null
+        }
+        this.success = 'You successfully deleted the image!'
+        this.filterList()
+      })
+    },
     filterList () {
       this.page = 1
       let query = { $or: [
@@ -206,17 +239,6 @@ export default {
         this.sortAsc = 1
       }
       this.filterList()
-    },
-    remove () {
-      db.remove({ _id: this.imageToDelete }, (error, removed) => {
-        this.imageToDelete = ''
-        if (error) {
-          this.error = error
-          return null
-        }
-        this.success = 'You successfully deleted the image!'
-        this.filterList()
-      })
     }
   },
   computed: {
@@ -238,6 +260,9 @@ export default {
   data () {
     return {
       file: '',
+      positions: ['Top', 'Bottom', 'Left', 'Right'],
+      editMode: false,
+      editId: '',
       imageSource: '',
       imageList: [],
       dbCursor: null,
@@ -251,7 +276,8 @@ export default {
         name: '',
         size: 0,
         createdAt: '',
-        tooltip: ''
+        tooltip: '',
+        tooltipPosition: ''
       },
       error: '',
       success: '',
