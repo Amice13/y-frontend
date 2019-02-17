@@ -36,7 +36,7 @@
               <v-flex sm1 xs12 pl-2 pr-2>
                 <v-img :src="item.source" :aspect-ratio="1" />
               </v-flex>
-              <v-flex sm4 pb-2 xs12 pl-2 pr-2 text-md-left text-xs-center>{{ item.tooltip }}</v-flex>
+              <v-flex sm4 pb-2 xs12 pl-2 pr-2 text-md-left text-xs-center> {{ item.tooltip }}</v-flex>
               <v-flex sm2 xs4 pl-2 pr-2 text-md-left text-xs-center>{{ item.name }}</v-flex>
               <v-flex sm2 xs4 pl-2 pr-2 text-xs-center>{{ item.width }} × {{ item.height }}</v-flex>
               <v-flex sm1 xs4 pl-2 pr-2 text-xs-center>{{ (item.size / (Math.pow(1024, 2))).toFixed(2) }} MB</v-flex>
@@ -47,7 +47,7 @@
                 <v-btn small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
                   <v-icon :left="$vuetify.breakpoint.smAndDown">edit</v-icon>
                   <span class="hidden-sm-and-up"> Edit</span></v-btn>
-                <v-btn small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
+                <v-btn @click.native="imageToDelete = item._id" small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
                   <v-icon :left="$vuetify.breakpoint.smAndDown">delete</v-icon>
                   <span class="hidden-sm-and-up"> Delete</span></v-btn>
               </v-flex>
@@ -106,7 +106,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- Error dialog -->
+    <!-- Success dialog -->
     <v-dialog :value="success" scrollable :overlay="true" max-width="500px" transition="dialog-transition">
       <v-card>
         <v-card-title class="headline green lighten-1" dark primary-title>
@@ -118,6 +118,23 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn @click="success = ''">Ok</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete confirmation dialog -->
+    <v-dialog :value="imageToDelete" scrollable :overlay="true" max-width="500px" transition="dialog-transition">
+      <v-card>
+        <v-card-title class="headline blue lighten-1" dark primary-title>
+          <h2 class="white--text">Confirmation</h2>
+        </v-card-title>
+        <v-card-text>
+          <p>Are you sure you want to delete the image? This action can't be reversed.</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="imageToDelete = ''">Cancel</v-btn>
+          <v-btn @click="remove" color="primary">Ok</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -157,6 +174,7 @@ export default {
         if (error) this.error = error.message
         this.success = 'Your image was successfully stored!'
         this.uploadDialog = false
+        this.filterList()
         return null
       })
     },
@@ -188,6 +206,17 @@ export default {
         this.sortAsc = 1
       }
       this.filterList()
+    },
+    remove () {
+      db.remove({ _id: this.imageToDelete }, (error, removed) => {
+        this.imageToDelete = ''
+        if (error) {
+          this.error = error
+          return null
+        }
+        this.success = 'You successfully deleted the image!'
+        this.filterList()
+      })
     }
   },
   computed: {
@@ -226,6 +255,7 @@ export default {
       },
       error: '',
       success: '',
+      imageToDelete: '',
       uploadDialog: false,
       page: 1,
       pages: 0,
