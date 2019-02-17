@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import { interopDefault } from './utils'
 
+const _75ff2a7e = () => interopDefault(import('../pages/image/_id/index.vue' /* webpackChunkName: "pages/image/_id/index" */))
 const _242eeaec = () => interopDefault(import('../pages/index.vue' /* webpackChunkName: "pages/index" */))
 
 Vue.use(Router)
@@ -65,6 +66,10 @@ export function createRouter() {
     scrollBehavior,
 
     routes: [{
+      path: "/image/:id?",
+      component: _75ff2a7e,
+      name: "image-id"
+    }, {
       path: "/",
       component: _242eeaec,
       name: "index"

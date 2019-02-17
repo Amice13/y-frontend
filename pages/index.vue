@@ -13,7 +13,7 @@
             </v-flex>
             <v-flex xs12 sm3 text-xs-right>
               <v-btn block @click.native.prevent="$refs.file.click" color="primary">
-                <v-icon left>publish</v-icon> Upload 
+                <v-icon left>publish</v-icon> Upload
               </v-btn>
             </v-flex>
           </v-layout>
@@ -21,7 +21,7 @@
           <v-layout row wrap pt-4 pb-1 v-if="imageList.length === 0">
             <v-flex xs12 text-xs-center>
               You have not uploaded any images yet!
-            </v-flex>            
+            </v-flex>
           </v-layout>
           <div v-if="imageList.length > 0">
             <v-layout row wrap pt-4 pb-1 hidden-sm-and-down class="grey lighten-3">
