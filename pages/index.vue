@@ -42,7 +42,7 @@
               <v-flex sm2 xs4 pl-2 pr-2 text-xs-center>{{ item.width }} × {{ item.height }}</v-flex>
               <v-flex sm1 xs4 pl-2 pr-2 text-xs-center>{{ (item.size / (Math.pow(1024, 2))).toFixed(2) }} MB</v-flex>
               <v-flex sm2 xs12 pl-2 pr-2 text-xs-center>
-                <v-btn small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
+                <v-btn nuxt :to="'/image/' + item._id"small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
                   <v-icon :left="$vuetify.breakpoint.smAndDown">play_arrow</v-icon>
                   <span class="hidden-sm-and-up"> View</span></v-btn>
                 <v-btn @click.native="editImage(item)" small :block="$vuetify.breakpoint.smAndDown" :flat="!$vuetify.breakpoint.smAndDown">
@@ -145,9 +145,6 @@
 </template>
 
 <script>
-import Nedb from 'nedb'
-const db = new Nedb({ filename: 'images', autoload: true })
-
 export default {
   async mounted () {
     let image = this.$refs.image
@@ -173,7 +170,7 @@ export default {
       this.uploadDialog = true
     },
     saveImage () {
-      db.insert(this.image, (error, newDoc) => {
+      this.$db.insert(this.image, (error, newDoc) => {
         if (error) this.error = error.message
         this.success = 'Your image was successfully stored!'
         this.uploadDialog = false
@@ -188,7 +185,7 @@ export default {
       this.uploadDialog = true
     },
     updateImage () {
-      db.update({ _id: this.editId }, this.image, (error, updated) => {
+      this.$db.update({ _id: this.editId }, this.image, (error, updated) => {
         this.editId = ''
         this.editMode = false
         this.uploadDialog = false
@@ -201,7 +198,7 @@ export default {
       })
     },
     removeImage () {
-      db.remove({ _id: this.imageToDelete }, (error, removed) => {
+      this.$db.remove({ _id: this.imageToDelete }, (error, removed) => {
         this.imageToDelete = ''
         if (error) {
           this.error = error
@@ -217,7 +214,7 @@ export default {
         { name: { $regex: new RegExp(this.filter, 'gi') } },
         { tooltip: { $regex: new RegExp(this.filter, 'gi') } }
       ] }
-      this.cursor = db.find(query).sort({ [this.sort]: this.sortAsc })
+      this.cursor = this.$db.find(query).sort({ [this.sort]: this.sortAsc })
       this.cursor.limit(this.limit).exec((error, data) => {
         if (error) {
           this.error = error
@@ -225,7 +222,7 @@ export default {
         }
         this.imageList = data
       })
-      db.count(query, (error, count) => {
+      this.$db.count(query, (error, count) => {
         if (error) this.error = error
         this.pages = Math.ceil(count / this.limit)
       })
